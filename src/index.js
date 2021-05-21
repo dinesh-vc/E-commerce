@@ -8,21 +8,18 @@ const environment = require('../enviornment');
 const mongoose = require("./config/mongoose");
 const routes = require("../src/app/routes/routes");
 require("./config/mongoose");
-
+const passport = require('passport')
 const env = process.env.NODE_ENV;
 const envconfig = environment[env];
 const port = envconfig.port || 3000;
 const app = express();
 mongoose.connect(envconfig, env);
 
-
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({
-    extended: true
-}))
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/',routes);
 
-app.listen(port, () => {
+app.listen(port, () => {  
     console.log(`server running on ${port}`)
 });

@@ -6,9 +6,6 @@ const Joi = require('@hapi/joi')
 
 
   const registerValidate  = async ( req , res , next) =>{
-
-
-
         const valid= await user.validate(req.body);
         if(valid.error){
             res.json({
@@ -19,7 +16,7 @@ const Joi = require('@hapi/joi')
             next();
         }
     }
-   
+    
     const loginValidate = async ( req , res , next) =>{
       console.log(req.body)
 

@@ -1,17 +1,34 @@
 const express = require('express')
 const route = express.Router();
-const controller=require('../controller/user.controller')
-const authValidate= require('../validation/auth')
+const userController=require('../controller/user.controller')
+const productController=require('../controller/product.controller')
+const authValidate= require('../validation/auth');
+const jwtValidate= require('../validation/jwtValidation')
+const passport = require('passport');
+const multer=require("../../middlewares/multer")
 
-route.post("/register",authValidate.registerValidate, controller.register);
+//authentication route
 
-route.post("/login",authValidate.loginValidate, controller.login);
+route.post("/register",authValidate.registerValidate, userController.register);
+route.post("/login",authValidate.loginValidate, userController.login);
+route.post("/logout",jwtValidate.valid, userController.logout);
+route.post("/forgotPassword",jwtValidate.valid, userController.forgotPassword);
+route.post("/verifyOTP",jwtValidate.valid, userController.verifyOTP);
+route.post("/resetPassword",jwtValidate.valid, userController.resetPassword);
+route.post("/emailVerification",jwtValidate.valid, userController.emailVerification);
+route.post("/verifyEmail",jwtValidate.valid, userController.verifyEmail);
 
-route.post("/logout", controller.logout);
+route.get('/googleAuth', passport.authenticate('google', { scope: ['profile', 'email'] }));
+route.get('/googleAuth/callback', passport.authenticate('google', { failureRedirect: '/failed' }),
+  function(req, res) {
+    // Successful authentication, redirect home.
+    res.redirect('/good');
+  }
+);
 
-route.post("/forgotPassword", controller.forgotPassword);
-route.post("/verifyOTP", controller.verifyOTP);
-route.post("/resetPassword", controller.resetPassword);
+// Product Route
 
+route.post('/demo' , productController.demo)
+route.post('/addProduct', multer.single('productImage'), productController.addProduct)
 
 module.exports=route;

@@ -2,6 +2,8 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
+const passport = require('passport')
+
 // creating user schema
 let userSchema = new Schema({
 
@@ -19,6 +21,11 @@ let userSchema = new Schema({
         required: true,
         unique: true
     },
+    isActive: {
+        type: String,
+        enum: [0, 1],
+        default: 0
+    },
 
     userType: {
         type: String
@@ -27,9 +34,14 @@ let userSchema = new Schema({
     token: [{
         type: String
     }],
+    
     OTP: [{
         type: String
     }],
+    emailToken: [{
+        type: String
+    }],
+
     password: {
         type: String,
         required: true
