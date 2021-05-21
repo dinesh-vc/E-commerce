@@ -61,6 +61,7 @@ exports.addProduct = async (req, res) => {
 }
 
 exports.demo = async(req, res) => {
-console.log(req.body.name)
+    
+    console.log(req.body)
     res.send(req.body.name)
 }

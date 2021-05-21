@@ -64,6 +64,7 @@ exports.login = async (req, res) => {
     try {
         let email = req.body.email;
         let password = req.body.password;
+
         let  userInfo = await user.findOne({email: email })
        if (!userInfo) {res.send("Please Register First !!")
         } else {
@@ -243,7 +244,6 @@ exports.resetPassword= async (req, res) => {
         console.log(error)
     }
 }
-
 
 exports.emailVerification = async (req, res) => {
     const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
