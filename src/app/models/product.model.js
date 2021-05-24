@@ -19,18 +19,16 @@ let productSchema = new Schema({
         ref: "users",
         required: true
     },
-    productImage : {
-        productImgPath: {
-            type: String,
-        }
-    },
+    productImage : [{  
+        type: String,
+    }],
     
     isDelete : {
         type: String,
         enum: [0, 1],
         default: 0
     },
-    price: {
+    productPrice: {
         type: Number,
         required: true
     }

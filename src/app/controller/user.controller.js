@@ -3,12 +3,11 @@ require('dotenv').config();
 const jwt = require("jsonwebtoken")
 const config = require('../../config/config')
 const fs = require('fs')
-
 const mail = require('../../utils/email')
 // Import Bycrpt module for password hasing
 const bcrypt = require('bcrypt')
-
- // regisration request
+const {OAuth2Client} = require('google-auth-library')
+// regisration request
 exports.register = async (req, res) => {
     try {
         let email = req.body.email;
@@ -21,43 +20,38 @@ exports.register = async (req, res) => {
             let password = req.body.password;
             let confirmPassword = req.body.confirmPassword;
 
-                const salt = await bcrypt.genSalt(10);
-                // now we set user password to hashed password
-                password = await bcrypt.hash(password, salt);
+            const salt = await bcrypt.genSalt(10);
+            // now we set user password to hashed password
+            password = await bcrypt.hash(password, salt);
 
-             
-                
-                const userRegistration = new user({
 
-                        name: req.body.name,
-                        userName: req.body.userName,
-                        userType: req.body.userType,
-                        email: req.body.email,
-                        password : password
-                })
 
-                const registred =await userRegistration.save();
-                let userInfo = await user.findOne({
-                    email: email
-                })
-               
-                res.json({
-                    message : `${userInfo.name} Registed Succesfully`,
-                    data : {
-                        name: userInfo.name,
-                        username: userInfo.userName,
-                        userType: userInfo.userType,
-                        email: userInfo.email
-                    }
-                })
-          
+            const userRegistration = new user({
+
+                name: req.body.name,
+                userName: req.body.userName,
+                userType: req.body.userType,
+                email: req.body.email,
+                password: password
+            })
+
+            const registred = await userRegistration.save();
+            let userInfo = await user.findOne({
+                email: email
+            })
+
+            res.json({
+                message: `${userInfo.name} Registed Succesfully`,
+                data: userInfo
+            })
+
 
         }
     } catch (error) {
         console.log(error)
     }
 }
- 
+
 
 // login request
 exports.login = async (req, res) => {
@@ -65,23 +59,30 @@ exports.login = async (req, res) => {
         let email = req.body.email;
         let password = req.body.password;
 
-        let  userInfo = await user.findOne({email: email })
-       if (!userInfo) {res.send("Please Register First !!")
+        let userInfo = await user.findOne({
+            email: email
+        })
+        if (!userInfo) {
+            res.send("Please Register First !!")
         } else {
             let comparedPassword = await bcrypt.compare(password, userInfo.password);
             if (email === userInfo.email && comparedPassword) {
-            var token = jwt.sign({email: userInfo.email}, config.JWTSecret, {expiresIn: '36000s'});
+                var token = jwt.sign({
+                    email: userInfo.email
+                }, config.JWTSecret, {
+                    expiresIn: '36000s'
+                });
                 res.json({
-                    message : `${userInfo.name} Login Succesfully`,
-                    data : {
-                        name: userInfo.name,
-                        username: userInfo.userName,
-                        userType: userInfo.userType,
-                        email: userInfo.email,
-                        token : token
-                    }
+                    message: `${userInfo.name} Login Succesfully`,
+                    data: userInfo
                 })
-                var addToken = await user.updateOne({email: userInfo.email}, {$push: {token: token}});
+                var addToken = await user.updateOne({
+                    email: userInfo.email
+                }, {
+                    $push: {
+                        token: token
+                    }
+                });
             } else {
                 res.send("Username and Password Invalid !!!")
             }
@@ -128,7 +129,13 @@ exports.forgotPassword = async (req, res) => {
     let userInfo = await user.findOne({
         email: email
     })
-    var addOTP = await user.updateOne({ email: email}, { $push: {OTP: OTP}});
+    var addOTP = await user.updateOne({
+        email: email
+    }, {
+        $push: {
+            OTP: OTP
+        }
+    });
     try {
         let mailOptions = {
             from: 'dineshchavda23104@gmail.com',
@@ -143,13 +150,8 @@ exports.forgotPassword = async (req, res) => {
                 res.send("User Not Found ");
             } else {
                 res.json({
-                    message : "OTP Sent Succusfully on Registred Mail",
-                    data : {
-                        name: userInfo.name,
-                        username: userInfo.userName,
-                        userType: userInfo.userType,
-                        email: userInfo.email
-                    }
+                    message: "OTP Sent Succusfully on Registred Mail",
+                    data: userInfo
                 })
             }
         });
@@ -174,30 +176,31 @@ exports.verifyOTP = async (req, res) => {
 
         let OTPArray = userInfo.OTP;
 
-        let isValid= OTPArray.includes(OTP);
+        let isValid = OTPArray.includes(OTP);
 
-        
-            if (isValid) {
 
-                var verifyOTP = await user.updateOne({email: email}, { $pull: {  OTP: OTP}});
-                if (verifyOTP) {
-                    res.json({
-                        message :"Please Enter New Password",
-                        data : {
-                        name: userInfo.name,
-                        username: userInfo.userName,
-                        userType: userInfo.userType,
-                        email: userInfo.email
-                        }
-                        
-                    })
+        if (isValid) {
 
+            var verifyOTP = await user.updateOne({
+                email: email
+            }, {
+                $pull: {
+                    OTP: OTP
                 }
-            } else {
+            });
+            if (verifyOTP) {
+                res.json({
+                    message: "Please Enter New Password",
+                    data: userInfo
 
-                res.send("Invalid OTP")
+                })
+
             }
-            
+        } else {
+
+            res.send("Invalid OTP")
+        }
+
 
     } catch (error) {
 
@@ -207,31 +210,32 @@ exports.verifyOTP = async (req, res) => {
 };
 
 // regisration request
-exports.resetPassword= async (req, res) => {
+exports.resetPassword = async (req, res) => {
     try {
 
         let email = req.body.email;
-     
+
         let userInfo = await user.findOne({
             email: email
         })
-            let password = req.body.newPassword;
-            const salt = await bcrypt.genSalt(10);
-            // now we set user password to hashed password
-            password = await bcrypt.hash(password, salt);
+        let password = req.body.newPassword;
+        const salt = await bcrypt.genSalt(10);
+        // now we set user password to hashed password
+        password = await bcrypt.hash(password, salt);
 
-            var updatePassword = await user.updateOne({email: email}, { $set: {password: password}});
-            if(updatePassword){
+        var updatePassword = await user.updateOne({
+            email: email
+        }, {
+            $set: {
+                password: password
+            }
+        });
+        if (updatePassword) {
             res.json({
-                message : "Password Update Succesfully",
+                message: "Password Update Succesfully",
 
-                data : {
-                    name: userInfo.name,
-                    username: userInfo.userName,
-                    userType: userInfo.userType,
-                    email: userInfo.email
-                }
-        
+                data: userInfo
+
             })
 
         } else {
@@ -239,20 +243,25 @@ exports.resetPassword= async (req, res) => {
         }
 
 
-        
+
     } catch (error) {
         console.log(error)
     }
 }
-
 exports.emailVerification = async (req, res) => {
     const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     let email = req.body.email;
     let userInfo = await user.findOne({
         email: email
     })
-    
-    var addOTP = await user.updateOne({ email: email}, { $push: { emailToken: token}});
+
+    var addOTP = await user.updateOne({
+        email: email
+    }, {
+        $push: {
+            emailToken: token
+        }
+    });
     try {
         let mailOptions = {
             from: 'dineshchavda23104@gmail.com',
@@ -266,13 +275,8 @@ exports.emailVerification = async (req, res) => {
                 res.send("User Not Found ");
             } else {
                 res.json({
-                    message : "Email Verification link Sent Succusfully on Registred Mail",
-                    data : {
-                        name: userInfo.name,
-                        username: userInfo.userName,
-                        userType: userInfo.userType,
-                        email: userInfo.email
-                    }
+                    message: "Email Verification link Sent Succusfully on Registred Mail",
+                    data: userInfo
                 })
             }
         });
@@ -283,7 +287,6 @@ exports.emailVerification = async (req, res) => {
 
     }
 };
-
 exports.verifyEmail = async (req, res) => {
 
     try {
@@ -295,33 +298,34 @@ exports.verifyEmail = async (req, res) => {
         let userInfo = await user.findOne({
             email: email
         })
-       
+
         let tokenArray = userInfo.emailToken;
 
-        let isValid= tokenArray.includes(emailToken);
+        let isValid = tokenArray.includes(emailToken);
 
-        
-       
-            if (isValid) {
 
-                var verifyToken = await user.updateOne({email: email}, { $pull: {  emailToken: emailToken}});
-                if (verifyToken) {
-                    res.json({
-                        message : "Email Verified",
-                        data : {
-                            name: userInfo.name,
-                            username: userInfo.userName,
-                            userType: userInfo.userType,
-                            email: userInfo.email
-                        }
-                    })
 
+        if (isValid) {
+
+            var verifyToken = await user.updateOne({
+                email: email
+            }, {
+                $pull: {
+                    emailToken: emailToken
                 }
-            } else {
-                res.send("Invalid link ")
+            });
+            if (verifyToken) {
+                res.json({
+                    message: "Email Verified",
+                    data: userInfo
+                })
+
             }
-            
-    
+        } else {
+            res.send("Invalid link ")
+        }
+
+
 
     } catch (error) {
 
@@ -330,6 +334,72 @@ exports.verifyEmail = async (req, res) => {
     }
 };
 
-exports.googleAuth= async (req , res ) => {
-    res.send("Hello")
+exports.googleAuth = async (req, res) => {
+
+    
+    const client = new OAuth2Client(config.CLIENT_ID)
+    const { token } = req.body
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.CLIENT_ID
+        });
+
+        if(ticket){
+
+            const {
+                name ,
+                email
+             } = ticket.getPayload();
+     
+             var jwtToken = jwt.sign({
+                 email: email
+             }, config.JWTSecret, {
+                 expiresIn: '36000s'
+             });
+
+             let userData = await user.findOne({
+                email: email
+            }) 
+            if(!userData){
+
+                const userRegistration = new user({
+                    name: name,
+                    userName: name,
+                    userType: req.body.userType,
+                    email: email,
+                    password: "",
+                    isSocialLogin : true,
+                    token: jwtToken
+        
+                })
+        
+                const registred = await userRegistration.save();
+
+            } else {
+
+                var addToken = await user.updateOne({
+                    email: email
+                }, {
+                    $push: {
+                        token: token
+                    }
+                });
+            }
+             
+            let userInfo = await user.findOne({
+                email: email
+            }) 
+     
+             res.json({
+                 message: `${userInfo.name} Login Succesfully`,
+                 data: userInfo
+             })
+        } else {
+            res.send("Token Expired")
+        }
+       
+     
+
+
+        
 }

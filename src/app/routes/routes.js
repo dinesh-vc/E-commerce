@@ -18,17 +18,13 @@ route.post("/resetPassword",jwtValidate.valid, userController.resetPassword);
 route.post("/emailVerification",jwtValidate.valid, userController.emailVerification);
 route.post("/verifyEmail",jwtValidate.valid, userController.verifyEmail);
 
-route.get('/googleAuth', passport.authenticate('google', { scope: ['profile', 'email'] }));
-route.get('/googleAuth/callback', passport.authenticate('google', { failureRedirect: '/failed' }),
-  function(req, res) {
-    // Successful authentication, redirect home.
-    res.redirect('/good');
-  }
-);
+route.post('/googleAuth' , userController.googleAuth)
+
 
 // Product Route
-
-route.post('/demo' , productController.demo)
-route.post('/addProduct', multer.single('productImage'), productController.addProduct)
+route.post('/addProduct',jwtValidate.valid, multer.array('productImage'), productController.addProduct);
+route.post('/editProduct',jwtValidate.valid, productController.editProduct);
+route.post('/addEditProduct',jwtValidate.valid, productController.addEditProduct);
+route.post('/deleteProduct',jwtValidate.valid, productController.deleteProduct);
 
 module.exports=route;

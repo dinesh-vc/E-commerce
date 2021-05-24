@@ -16,34 +16,35 @@ exports.addProduct = async (req, res) => {
 
     try {
         
-        let userId= req.body.userId;
-        let userInfo = await users.findOne({
-            _id : userId
-        })
+        const token = req.headers["authorization"];
+         const {email }= jwt.decode(token)
+        let userInfo = await users.findOne({email : email})
 
         if ( userInfo.userType == 'Vendor'){
 
             const newProduct = new products({
-                addedBy: userId,
-                productImage: req.body.productImg,
+                addedBy: userInfo._id,
                 productName: req.body.productName,
                 productQuantity: req.body.productQuantity,
-                price: req.body.price,
+                productPrice: req.body.productPrice,
     
             })
+
             const addingProduct = await newProduct.save();
 
+            let files= req.files;
+           files.forEach( async element => {
+            var productImages = await products.updateOne({ _id: addingProduct._id }, {$push: {productImage: element.path} });
+
+            });
+
             let productInfo = await products.findOne({
-                addedBy : userId , productName : req.body.productName
+                addedBy : userInfo._id , productName : req.body.productName
             })
 
             res.json({
-                message : `${userInfo.name} added ${req.body.productName} Succesfully`,
-                productDetail : {
-                    productName : productInfo.productName,
-                    productQuantity : productInfo.productQuantity,
-                    productImage : productInfo.productImage
-                }
+                message : `${req.body.productName} Succesfully`,
+                productDetail : productInfo
             })
 
         } else {
@@ -51,17 +52,78 @@ exports.addProduct = async (req, res) => {
             res.send("Please Register As Vendor")
         }
 
-        
-
-
-
     } catch (error) {
         console.log(error)
     }
 }
 
-exports.demo = async(req, res) => {
+exports.editProduct= async (req, res) =>{
+
+    const token = req.headers["authorization"];
+    const {email }= jwt.decode(token)
+    let userInfo = await users.findOne({email : email})
+
+    if ( userInfo.userType == 'Vendor'){
+
+        const productId= req.body.productId
+        let productInfo = await products.findOne({
+            _id: productId
+        });
+        res.json({
+            message : `${productInfo.productName} for edit`,
+            productDetail : productInfo
+        })
+    }else {
+        res.send("Please Register As Vendor")
+    }
+   
+}
+
+exports.addEditProduct= async (req, res) =>{
+    const token = req.headers["authorization"];
+    const {email }= jwt.decode(token)
+    let userInfo = await users.findOne({email : email})
+
+    if ( userInfo.userType == 'Vendor'){
+        const productId= req.body.productId;
+    let updateProduct = await products.updateOne({_id: productId}, {
+        $set: {
+            productPrice: req.body.productPrice,
+            productQuantity: req.body.productQuantity
+        }
+    })
+
+    let productInfo = await products.findOne({
+        _id: productId
+    });
+   
+    res.json({
+        message : `${productInfo.productName} Edited Succesfully`,
+        productDetail : productInfo
+    })
+    }else {
+        res.send("Please Register As Vendor")
+    }
     
-    console.log(req.body)
-    res.send(req.body.name)
+}
+
+exports.deleteProduct= async (req , res) =>{
+    const token = req.headers["authorization"];
+    const {email }= jwt.decode(token)
+    let userInfo = await users.findOne({email : email})
+
+    if ( userInfo.userType == 'Vendor'){ 
+        const productId= req.body.productId;
+    let deleteProduct = await products.updateOne({_id: productId}, {$set: { isDelete : true}})
+    let productInfo = await products.findOne({_id: productId});
+
+    res.json({
+    message : `${productInfo.productName} Deleted Succesfully`,
+    productDetail : productInfo
+    })
+
+    }else {
+        res.send("Please Register As Vendor")
+    }
+    
 }

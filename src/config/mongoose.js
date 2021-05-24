@@ -21,9 +21,7 @@ mongoose.connection.on('error', (err) => {
  */
 exports.connect = (envConfig, env) => {
     // print mongoose logs in dev env
-    if (env === 'Development') {
-        mongoose.set('debug', true);
-    }
+   
     mongoose.connect(envConfig.mongoUri, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
